@@ -15,6 +15,12 @@ margins_mapping = {"well defined": 0, "spiculated": 1, "other": 2}
 calcifications_mapping = {"microcalcifications": 0, "macrocalcifications": 1, "none": 2}
 tirads_mapping = {"3": 0, "4a": 1, "4b": 2, "5": 3}
 
+# Expected column names
+expected_columns = [
+    "number", "age", "sex", "composition", "echogenicity", 
+    "margins", "calcifications", "tirads", "Malignant_percentage"
+]
+
 # Streamlit app
 st.title("Cancer Risk Prediction")
 st.write("This app predicts the cancer risk percentage based on input features.")
@@ -33,19 +39,19 @@ malignant_percentage = st.sidebar.selectbox("Malignant Percentage", [round(i * 0
 
 # Encode user inputs
 encoded_inputs = {
-    "Number": number,
-    "Age": age,
-    "Sex": sex_mapping[sex],
-    "Composition": composition_mapping[composition],
-    "Echogenicity": echogenicity_mapping[echogenicity],
-    "Margins": margins_mapping[margins],
-    "Calcifications": calcifications_mapping[calcifications],
-    "TIRADS": tirads_mapping[tirads],
-    "Malignant_Percentage": malignant_percentage,
+    "number": number,
+    "age": age,
+    "sex": sex_mapping[sex],
+    "composition": composition_mapping[composition],
+    "echogenicity": echogenicity_mapping[echogenicity],
+    "margins": margins_mapping[margins],
+    "calcifications": calcifications_mapping[calcifications],
+    "tirads": tirads_mapping[tirads],
+    "Malignant_percentage": malignant_percentage,
 }
 
 # Convert to DataFrame
-input_df = pd.DataFrame([encoded_inputs])
+input_df = pd.DataFrame([encoded_inputs], columns=expected_columns)
 
 # Debugging (optional, remove or comment out later)
 st.write("Input DataFrame:")
