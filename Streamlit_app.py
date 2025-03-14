@@ -1,13 +1,18 @@
 import streamlit as st
 import pickle
 import pandas as pd
+import numpy as np
+from tensorflow.keras.models import load_model
+from tensorflow.keras.preprocessing import image
 
-# Load the trained model
-model_path = "cancer_risk_model.pkl"
-with open(model_path, "rb") as file:
-    model = pickle.load(file)
+# Load the ML model
+with open("cancer_risk_model.pkl", "rb") as file:
+    ml_model = pickle.load(file)
 
-# Encoding dictionaries (adjust these to match your model's training)
+# Load the CNN model
+cnn_model = load_model("thyroid_cnn_model.h5")
+
+# Encoding dictionaries for ML model
 sex_mapping = {"M": 0, "F": 1}
 composition_mapping = {"solid": 0, "predominantly solid": 1, "other": 2}
 echogenicity_mapping = {"hyperechogenicity": 0, "isoechogenicity": 1, "hypoechogenicity": 2, "other": 3}
@@ -15,18 +20,11 @@ margins_mapping = {"well defined": 0, "spiculated": 1, "other": 2}
 calcifications_mapping = {"microcalcifications": 0, "macrocalcifications": 1, "none": 2}
 tirads_mapping = {"3": 0, "4a": 1, "4b": 2, "5": 3}
 
-# Expected column names
-expected_columns = [
-    "number", "age", "sex", "composition", "echogenicity", 
-    "margins", "calcifications", "tirads", "Malignant_percentage"
-]
-
 # Streamlit app
-st.title("Cancer Risk Prediction")
-st.write("This app predicts the cancer risk percentage based on input features.")
+st.title("Thyroid Cancer and Nodule Prediction")
 
-# User input for independent variables
-st.sidebar.header("Input Features")
+# Cancer risk prediction
+st.sidebar.header("Cancer Risk Prediction Features")
 number = st.sidebar.selectbox("Number", list(range(0, 101)), index=10)
 age = st.sidebar.selectbox("Age", list(range(0, 101)), index=30)
 sex = st.sidebar.selectbox("Sex", ["M", "F"], index=1)
@@ -37,7 +35,6 @@ calcifications = st.sidebar.selectbox("Calcifications", ["microcalcifications", 
 tirads = st.sidebar.selectbox("TIRADS", ["3", "4a", "4b", "5"], index=1)
 malignant_percentage = st.sidebar.selectbox("Malignant Percentage", [round(i * 0.01, 2) for i in range(0, 101)], index=50)
 
-# Encode user inputs
 encoded_inputs = {
     "number": number,
     "age": age,
@@ -49,18 +46,24 @@ encoded_inputs = {
     "tirads": tirads_mapping[tirads],
     "Malignant_percentage": malignant_percentage,
 }
+input_df = pd.DataFrame([encoded_inputs])
 
-# Convert to DataFrame
-input_df = pd.DataFrame([encoded_inputs], columns=expected_columns)
+if st.sidebar.button("Predict Cancer Risk"):
+    prediction = ml_model.predict(input_df)[0]
+    st.success(f"Predicted Cancer Risk: {prediction:.2f}%")
 
-# Debugging (optional, remove or comment out later)
-st.write("Input DataFrame:")
-st.write(input_df)
+# Thyroid stage prediction
+st.header("Thyroid Nodule Stage Prediction")
+uploaded_file = st.file_uploader("Upload Ultrasound Image", type=["jpg", "png", "jpeg"])
 
-# Prediction
-if st.button("Predict Cancer Risk"):
-    try:
-        prediction = model.predict(input_df)[0]
-        st.success(f"Predicted Cancer Risk: {prediction:.2f}")
-    except Exception as e:
-        st.error(f"An error occurred during prediction: {e}")
+if uploaded_file is not None:
+    # Load and preprocess the image
+    img = image.load_img(uploaded_file, target_size=(224, 224))
+    img_array = image.img_to_array(img) / 255.0
+    img_array = np.expand_dims(img_array, axis=0)
+
+    # Predict using the CNN model
+    stage_prediction = cnn_model.predict(img_array)
+    stage = ["First Stage", "Mid Stage", "Last Stage"][np.argmax(stage_prediction)]
+    st.image(uploaded_file, caption="Uploaded Image", use_column_width=True)
+    st.success(f"Predicted Thyroid Stage: {stage}")
