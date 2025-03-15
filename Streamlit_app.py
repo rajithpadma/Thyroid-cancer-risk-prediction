@@ -48,23 +48,34 @@ if st.sidebar.button("Predict Cancer Risk"):
     prediction = ml_model.predict(input_df)[0]
     st.success(f"Predicted Cancer Risk: {prediction:.2f}%")
 
-# Load the trained CNN model
-cnn_model = load_model("cnn_image_model.h5")
+from tensorflow.keras.models import load_model
+from tensorflow.keras.preprocessing.image import load_img, img_to_array
 
-# Streamlit interface for cancer risk percentage prediction
-st.header("Thyroid Cancer Risk Percentage Prediction")
-uploaded_file = st.file_uploader("Upload Ultrasound Image", type=["jpg", "png", "jpeg"])
+# Constants
+img_height, img_width = 224, 224
+
+# Load the trained model
+model = load_model("simplified_model.h5")
+
+# Streamlit app interface
+st.title("Thyroid Cancer Risk Prediction")
+st.write("Upload an ultrasound image to predict the thyroid cancer risk percentage.")
+
+uploaded_file = st.file_uploader("Choose an Ultrasound Image", type=["jpg", "png", "jpeg"])
 
 if uploaded_file is not None:
-    # Load and preprocess the uploaded image
-    img = image.load_img(uploaded_file, target_size=(224, 224))
-    img_array = image.img_to_array(img) / 255.0
-    img_array = np.expand_dims(img_array, axis=0)
-
-    # Predict the cancer risk percentage using the CNN model
-    risk_percentage = cnn_model.predict(img_array)[0][0]  # Extract the percentage value
-    risk_percentage = round(risk_percentage * 100, 2)  # Convert to percentage and round off
-
-    # Display the uploaded image and prediction
+    # Display uploaded image
     st.image(uploaded_file, caption="Uploaded Image", use_column_width=True)
+
+    # Preprocess the uploaded image
+    img = load_img(uploaded_file, target_size=(img_height, img_width))
+    img_array = img_to_array(img) / 255.0  # Normalize
+    img_array = np.expand_dims(img_array, axis=0)  # Add batch dimension
+
+    # Predict the risk percentage
+    prediction = model.predict(img_array)
+    risk_percentage = prediction[0][0] * 100  # Convert to percentage
+    risk_percentage = round(risk_percentage, 2)  # Round to two decimal places
+
+    # Display prediction
     st.success(f"Predicted Thyroid Cancer Risk: {risk_percentage}%")
