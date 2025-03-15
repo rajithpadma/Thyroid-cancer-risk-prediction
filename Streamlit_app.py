@@ -9,6 +9,8 @@ from tensorflow.keras.preprocessing import image
 with open("cancer_risk_model.pkl", "rb") as file:
     ml_model = pickle.load(file)
 
+# Load the CNN model
+cnn_model = load_model("thyroid_cnn_model.h5")
 
 # Encoding dictionaries for ML model
 sex_mapping = {"M": 0, "F": 1}
@@ -23,6 +25,7 @@ st.title("Thyroid Cancer and Nodule Prediction")
 
 # Cancer risk prediction
 st.sidebar.header("Cancer Risk Prediction Features")
+number = st.sidebar.selectbox("Number", list(range(0, 101)), index=10)
 age = st.sidebar.selectbox("Age", list(range(0, 101)), index=30)
 sex = st.sidebar.selectbox("Sex", ["M", "F"], index=1)
 composition = st.sidebar.selectbox("Composition", ["solid", "predominantly solid", "other"], index=0)
@@ -33,6 +36,7 @@ tirads = st.sidebar.selectbox("TIRADS", ["3", "4a", "4b", "5"], index=1)
 malignant_percentage = st.sidebar.selectbox("Malignant Percentage", [round(i * 0.01, 2) for i in range(0, 101)], index=50)
 
 encoded_inputs = {
+    "number": number,
     "age": age,
     "sex": sex_mapping[sex],
     "composition": composition_mapping[composition],
@@ -47,6 +51,7 @@ input_df = pd.DataFrame([encoded_inputs])
 if st.sidebar.button("Predict Cancer Risk"):
     prediction = ml_model.predict(input_df)[0]
     st.success(f"Predicted Cancer Risk: {prediction:.2f}%")
+
 
 from tensorflow.keras.models import load_model
 from tensorflow.keras.preprocessing.image import load_img, img_to_array
