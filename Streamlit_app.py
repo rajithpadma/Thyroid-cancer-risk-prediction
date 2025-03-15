@@ -9,9 +9,6 @@ from tensorflow.keras.preprocessing import image
 with open("cancer_risk_model.pkl", "rb") as file:
     ml_model = pickle.load(file)
 
-# Load the CNN model
-cnn_model = load_model("thyroid_cnn_model.h5")
-
 # Encoding dictionaries for ML model
 sex_mapping = {"M": 0, "F": 1}
 composition_mapping = {"solid": 0, "predominantly solid": 1, "other": 2}
