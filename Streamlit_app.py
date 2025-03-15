@@ -9,8 +9,6 @@ from tensorflow.keras.preprocessing import image
 with open("cancer_risk_model.pkl", "rb") as file:
     ml_model = pickle.load(file)
 
-# Load the CNN model
-cnn_model = load_model("thyroid_cnn_model.h5")
 
 # Encoding dictionaries for ML model
 sex_mapping = {"M": 0, "F": 1}
@@ -50,18 +48,23 @@ if st.sidebar.button("Predict Cancer Risk"):
     prediction = ml_model.predict(input_df)[0]
     st.success(f"Predicted Cancer Risk: {prediction:.2f}%")
 
-# Thyroid stage prediction
-st.header("Thyroid Nodule Stage Prediction")
+# Load the trained CNN model
+cnn_model = load_model("cnn_image_model.h5")
+
+# Streamlit interface for cancer risk percentage prediction
+st.header("Thyroid Cancer Risk Percentage Prediction")
 uploaded_file = st.file_uploader("Upload Ultrasound Image", type=["jpg", "png", "jpeg"])
 
 if uploaded_file is not None:
-    # Load and preprocess the image
+    # Load and preprocess the uploaded image
     img = image.load_img(uploaded_file, target_size=(224, 224))
     img_array = image.img_to_array(img) / 255.0
     img_array = np.expand_dims(img_array, axis=0)
 
-    # Predict using the CNN model
-    stage_prediction = cnn_model.predict(img_array)
-    stage = ["First Stage", "Mid Stage", "Last Stage"][np.argmax(stage_prediction)]
+    # Predict the cancer risk percentage using the CNN model
+    risk_percentage = cnn_model.predict(img_array)[0][0]  # Extract the percentage value
+    risk_percentage = round(risk_percentage * 100, 2)  # Convert to percentage and round off
+
+    # Display the uploaded image and prediction
     st.image(uploaded_file, caption="Uploaded Image", use_column_width=True)
-    st.success(f"Predicted Thyroid Stage: {stage}")
+    st.success(f"Predicted Thyroid Cancer Risk: {risk_percentage}%")
