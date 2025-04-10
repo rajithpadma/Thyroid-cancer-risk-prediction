@@ -1,3 +1,4 @@
+import os
 import streamlit as st
 import pandas as pd
 import numpy as np
@@ -7,23 +8,34 @@ import pickle
 
 # Constants
 IMG_HEIGHT, IMG_WIDTH = 224, 224
-ML_MODEL_PATH = "cancer_risk_model.pkl"
-CNN_MODEL_PATH = "simplified_model.h5"
+ML_MODEL_PATH = "cancer_risk_model.pkl"  # Change this path if necessary
+CNN_MODEL_PATH = "simplified_model.h5"  # Change this path if necessary
 
 # Load models
 @st.cache_resource
 def load_models():
+    ml_model = None
+    cnn_model = None
     try:
-        # Load ML model
-        with open(ML_MODEL_PATH, "rb") as file:
-            ml_model = pickle.load(file)
-        # Load CNN model
-        cnn_model = load_model(CNN_MODEL_PATH)
-        return ml_model, cnn_model
+        # Check if the ML model exists
+        if os.path.exists(ML_MODEL_PATH):
+            with open(ML_MODEL_PATH, "rb") as file:
+                ml_model = pickle.load(file)
+        else:
+            st.sidebar.warning("ML model file not found. Please check the ML_MODEL_PATH.")
+
+        # Check if the CNN model exists
+        if os.path.exists(CNN_MODEL_PATH):
+            cnn_model = load_model(CNN_MODEL_PATH)
+        else:
+            st.sidebar.warning("CNN model file not found. Please check the CNN_MODEL_PATH.")
+        
     except Exception as e:
         st.sidebar.error(f"Error loading models: {e}")
-        return None, None
+    
+    return ml_model, cnn_model
 
+# Load the models at the start
 ml_model, cnn_model = load_models()
 
 # Dictionaries for encoding categorical features
@@ -42,7 +54,7 @@ mode = st.sidebar.radio("Prediction Type", ["ML Model (Tabular Data)", "CNN Mode
 if mode == "ML Model (Tabular Data)":
     st.header("Cancer Risk Prediction using Tabular Data")
 
-    # Input fields
+    # Input fields for ML model prediction
     st.sidebar.header("Features for ML Prediction")
     number = st.sidebar.slider("Number of Nodules", 0, 100, 10)
     age = st.sidebar.slider("Age", 0, 100, 30)
