@@ -2,71 +2,177 @@ import os
 import streamlit as st
 import pandas as pd
 import numpy as np
+import joblib
+
 from tensorflow.keras.models import load_model
 from tensorflow.keras.preprocessing.image import load_img, img_to_array
-import pickle
 
-# Constants
-IMG_HEIGHT, IMG_WIDTH = 224, 224
-ML_MODEL_PATH = "cancer_risk_model.pkl"  # Change this path if necessary
-CNN_MODEL_PATH = "simplified_model.h5"  # Change this path if necessary
+# =========================
+# CONFIGURATION
+# =========================
 
-# Load models
+IMG_HEIGHT = 224
+IMG_WIDTH = 224
+
+ML_MODEL_PATH = "cancer_risk_model.pkl"
+CNN_MODEL_PATH = "simplified_model.h5"
+
+# =========================
+# LOAD MODELS
+# =========================
+
 @st.cache_resource
 def load_models():
     ml_model = None
     cnn_model = None
-    try:
-        # Check if the ML model exists
-        if os.path.exists(ML_MODEL_PATH):
-            with open(ML_MODEL_PATH, "rb") as file:
-                ml_model = pickle.load(file)
-        else:
-            st.sidebar.warning("ML model file not found. Please check the ML_MODEL_PATH.")
 
-        # Check if the CNN model exists
+    try:
+        # Load ML model
+        if os.path.exists(ML_MODEL_PATH):
+            ml_model = joblib.load(ML_MODEL_PATH)
+            st.sidebar.success("ML model loaded successfully.")
+        else:
+            st.sidebar.error(f"ML model not found: {ML_MODEL_PATH}")
+
+        # Load CNN model
         if os.path.exists(CNN_MODEL_PATH):
             cnn_model = load_model(CNN_MODEL_PATH)
+            st.sidebar.success("CNN model loaded successfully.")
         else:
-            st.sidebar.warning("CNN model file not found. Please check the CNN_MODEL_PATH.")
-        
+            st.sidebar.error(f"CNN model not found: {CNN_MODEL_PATH}")
+
     except Exception as e:
-        st.sidebar.error(f"Error loading models: {e}")
-    
+        st.sidebar.error(f"Error loading models:\n{e}")
+
     return ml_model, cnn_model
 
-# Load the models at the start
+# Load models
 ml_model, cnn_model = load_models()
 
-# Dictionaries for encoding categorical features
-sex_mapping = {"M": 0, "F": 1}
-composition_mapping = {"solid": 0, "predominantly solid": 1, "other": 2}
-echogenicity_mapping = {"hyperechogenicity": 0, "isoechogenicity": 1, "hypoechogenicity": 2, "other": 3}
-margins_mapping = {"well defined": 0, "spiculated": 1, "other": 2}
-calcifications_mapping = {"microcalcifications": 0, "macrocalcifications": 1, "none": 2}
-tirads_mapping = {"3": 0, "4a": 1, "4b": 2, "5": 3}
+# =========================
+# CATEGORY ENCODINGS
+# =========================
 
-# Streamlit interface
-st.title("Thyroid Cancer Risk Prediction")
-st.sidebar.header("Choose a Prediction Mode")
-mode = st.sidebar.radio("Prediction Type", ["ML Model (Tabular Data)", "CNN Model (Ultrasound Image)"])
+sex_mapping = {
+    "M": 0,
+    "F": 1
+}
+
+composition_mapping = {
+    "solid": 0,
+    "predominantly solid": 1,
+    "other": 2
+}
+
+echogenicity_mapping = {
+    "hyperechogenicity": 0,
+    "isoechogenicity": 1,
+    "hypoechogenicity": 2,
+    "other": 3
+}
+
+margins_mapping = {
+    "well defined": 0,
+    "spiculated": 1,
+    "other": 2
+}
+
+calcifications_mapping = {
+    "microcalcifications": 0,
+    "macrocalcifications": 1,
+    "none": 2
+}
+
+tirads_mapping = {
+    "3": 0,
+    "4a": 1,
+    "4b": 2,
+    "5": 3
+}
+
+# =========================
+# UI
+# =========================
+
+st.title("Thyroid Cancer Risk Prediction System")
+
+st.sidebar.header("Prediction Mode")
+
+mode = st.sidebar.radio(
+    "Choose Prediction Type",
+    [
+        "ML Model (Tabular Data)",
+        "CNN Model (Ultrasound Image)"
+    ]
+)
+
+# =========================================================
+# ML MODEL SECTION
+# =========================================================
 
 if mode == "ML Model (Tabular Data)":
+
     st.header("Cancer Risk Prediction using Tabular Data")
 
-    # Input fields for ML model prediction
-    st.sidebar.header("Features for ML Prediction")
-    number = st.sidebar.slider("Number of Nodules", 0, 100, 10)
-    age = st.sidebar.slider("Age", 0, 100, 30)
-    sex = st.sidebar.selectbox("Sex", ["M", "F"], index=1)
-    composition = st.sidebar.selectbox("Composition", ["solid", "predominantly solid", "other"], index=0)
-    echogenicity = st.sidebar.selectbox("Echogenicity", ["hyperechogenicity", "isoechogenicity", "hypoechogenicity", "other"], index=1)
-    margins = st.sidebar.selectbox("Margins", ["well defined", "spiculated", "other"], index=0)
-    calcifications = st.sidebar.selectbox("Calcifications", ["microcalcifications", "macrocalcifications", "none"], index=0)
-    tirads = st.sidebar.selectbox("TIRADS", ["3", "4a", "4b", "5"], index=1)
-    malignant_percentage = st.sidebar.slider("Malignant Percentage", 0.0, 1.0, 0.5, step=0.01)
+    st.sidebar.header("Patient Features")
 
-    # Prepare input for prediction
+    number = st.sidebar.slider("Number of Nodules", 0, 100, 10)
+
+    age = st.sidebar.slider("Age", 1, 100, 30)
+
+    sex = st.sidebar.selectbox(
+        "Sex",
+        ["M", "F"]
+    )
+
+    composition = st.sidebar.selectbox(
+        "Composition",
+        ["solid", "predominantly solid", "other"]
+    )
+
+    echogenicity = st.sidebar.selectbox(
+        "Echogenicity",
+        [
+            "hyperechogenicity",
+            "isoechogenicity",
+            "hypoechogenicity",
+            "other"
+        ]
+    )
+
+    margins = st.sidebar.selectbox(
+        "Margins",
+        [
+            "well defined",
+            "spiculated",
+            "other"
+        ]
+    )
+
+    calcifications = st.sidebar.selectbox(
+        "Calcifications",
+        [
+            "microcalcifications",
+            "macrocalcifications",
+            "none"
+        ]
+    )
+
+    tirads = st.sidebar.selectbox(
+        "TIRADS",
+        ["3", "4a", "4b", "5"]
+    )
+
+    malignant_percentage = st.sidebar.slider(
+        "Malignant Percentage",
+        0.0,
+        1.0,
+        0.5,
+        step=0.01
+    )
+
+    # Create dataframe
+
     encoded_inputs = {
         "number": number,
         "age": age,
@@ -76,42 +182,78 @@ if mode == "ML Model (Tabular Data)":
         "margins": margins_mapping[margins],
         "calcifications": calcifications_mapping[calcifications],
         "tirads": tirads_mapping[tirads],
-        "Malignant_percentage": malignant_percentage,
+        "Malignant_percentage": malignant_percentage
     }
+
     input_df = pd.DataFrame([encoded_inputs])
 
-    if st.sidebar.button("Predict Cancer Risk (ML Model)"):
-        if ml_model:
-            prediction = ml_model.predict(input_df)[0]
-            st.success(f"Predicted Cancer Risk: {prediction:.2f}%")
+    if st.sidebar.button("Predict Cancer Risk"):
+
+        if ml_model is not None:
+
+            try:
+                prediction = ml_model.predict(input_df)[0]
+
+                st.success(
+                    f"Predicted Cancer Risk: {round(prediction, 2)}%"
+                )
+
+            except Exception as pred_error:
+                st.error(f"Prediction Error:\n{pred_error}")
+
         else:
-            st.error("ML model not loaded. Check the model path or format.")
+            st.error("ML model failed to load.")
+
+# =========================================================
+# CNN MODEL SECTION
+# =========================================================
 
 elif mode == "CNN Model (Ultrasound Image)":
-    st.header("Cancer Risk Prediction using Ultrasound Image")
-    st.write("Upload an ultrasound image to predict the thyroid cancer risk percentage.")
 
-    uploaded_file = st.file_uploader("Choose an Ultrasound Image", type=["jpg", "png", "jpeg"])
+    st.header("Cancer Risk Prediction using Ultrasound Images")
+
+    uploaded_file = st.file_uploader(
+        "Upload Ultrasound Image",
+        type=["jpg", "jpeg", "png"]
+    )
 
     if uploaded_file is not None:
+
         try:
-            # Display uploaded image
-            st.image(uploaded_file, caption="Uploaded Image", use_column_width=True)
+            st.image(
+                uploaded_file,
+                caption="Uploaded Ultrasound Image",
+                use_container_width=True
+            )
 
-            # Preprocess the uploaded image
-            img = load_img(uploaded_file, target_size=(IMG_HEIGHT, IMG_WIDTH))
-            img_array = img_to_array(img) / 255.0  # Normalize
-            img_array = np.expand_dims(img_array, axis=0)  # Add batch dimension
+            # Image preprocessing
 
-            # Predict the risk percentage
-            if cnn_model:
+            img = load_img(
+                uploaded_file,
+                target_size=(IMG_HEIGHT, IMG_WIDTH)
+            )
+
+            img_array = img_to_array(img)
+
+            img_array = img_array / 255.0
+
+            img_array = np.expand_dims(img_array, axis=0)
+
+            if cnn_model is not None:
+
                 prediction = cnn_model.predict(img_array)
-                risk_percentage = prediction[0][0] * 100  # Convert to percentage
-                risk_percentage = round(risk_percentage, 2)  # Round to two decimal places
-                st.success(f"Predicted Thyroid Cancer Risk: {risk_percentage}%")
+
+                risk_percentage = float(prediction[0][0]) * 100
+
+                st.success(
+                    f"Predicted Thyroid Cancer Risk: {round(risk_percentage, 2)}%"
+                )
+
             else:
-                st.error("CNN model not loaded. Check the model path or format.")
+                st.error("CNN model failed to load.")
+
         except Exception as img_error:
-            st.error(f"Error processing the uploaded image: {img_error}")
+            st.error(f"Image Processing Error:\n{img_error}")
+
     else:
-        st.info("Please upload an image to start the prediction.")
+        st.info("Please upload an ultrasound image.")
