@@ -39,10 +39,10 @@ def load_models():
             cnn_model = load_model(CNN_MODEL_PATH)
             st.sidebar.success("CNN model loaded successfully.")
         else:
-            st.sidebar.error(f"CNN model not found: {CNN_MODEL_PATH}")
+            st.sidebar.error(...)
 
     except Exception as e:
-        st.sidebar.error(f"Error loading models:\n{e}")
+        st.sidebar.error(...)
 
     return ml_model, cnn_model
 
@@ -223,7 +223,7 @@ elif mode == "CNN Model (Ultrasound Image)":
             st.image(
                 uploaded_file,
                 caption="Uploaded Ultrasound Image",
-                use_container_width=True
+                width=400
             )
 
             # Image preprocessing
